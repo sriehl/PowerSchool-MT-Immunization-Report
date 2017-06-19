@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html><!--  ng-app="immunizationApp" -->
+<!-- non framed -->
+<head>
+<title>Immunization Report</title>
+~[wc:commonscripts]
+<link href="/images/css/screen.css" rel="stylesheet" media="screen">
+<link href="/images/css/print.css" rel="stylesheet" media="print">
+<style>
+    #immunization_records tbody td,
+    #immunization_records thead th,
+    #immunization_records tfoot td,
+    #state tbody td,
+    #state thead th,
+    #state tfoot td {
+        text-align: center;
+    }
+
+    tr#totals td {
+        font-weight: bold;
+    }
+
+    .td_disabled {
+        background-image: url("/images/table-back-stripes.png") !important;
+    }
+
+    .left_border {
+        border-left: 2px solid black !important;
+    }
+
+    .tooltip {
+        position: relative;
+    }
+
+    .tooltip:hover:after{
+        background: #333;
+        background: rgba(0,0,0,.8);
+        border-radius: 5px;
+        bottom: 26px;
+        color: #fff;
+        content: attr(data-tip);
+        left: 20%;
+        padding: 5px 15px;
+        position: absolute;
+        z-index: 98;
+        width: 220px;
+    }
+
+    .tooltip:hover:before{
+        border: solid;
+        border-color: #333 transparent;
+        border-width: 6px 6px 0 6px;
+        bottom: 20px;
+        content: "";
+        left: 50%;
+        position: absolute;
+        z-index: 99;
+    }
+</style>
+</head>
+
+<body>
+~[wc:admin_header_css]<!-- breadcrumb start --><a href="/admin/home.html" target="_top">~[text:psx.html.admin_reports.runreports.start_page]</a> &gt; <a href="/admin/reports/bps.html">BPS Reports</a> &gt; Immunizations<!-- breadcrumb end -->~[wc:admin_navigation_css]
+
+<h1>Immunizations</h1>
+
+<!-- start of content and bounding box -->
+<div class="box-round" ng-controller="ReportController">
+
+<div class="box-round">
+    <label for="includeprereg"><input id="includeprereg" type="checkbox" ng-model="includeprereg" ng-change="getData()"> Include Pre-Registered Students?</label>
+</div>
+
+<fieldset>
+<legend>Summary</legend>
+<table id="immunization_records" class="grid ng-cloak">
+    <thead>
+        <tr>
+            <th rowspan="2">Grade</th>
+            <th rowspan="2">Number Enrolled</th>
+            <th colspan="5" class="left_border tooltip" data-tip="2 doses (first dose must be given on or after 1st birthday, and spacing between doses is 4 weeks)">MMR</th>
+            <th colspan="5" class="left_border tooltip" data-tip="4 doses (3 doses only if 3rd dose given on or after 4th birthday)">Polio</th>
+            <th colspan="5" class="left_border tooltip" data-tip="5 doses (4 doses only if 4th dose given on or after 4th birthday) Plus 1 dose containing pertussis prior to 7th grade">DTAP</th>
+            <th colspan="6" class="left_border tooltip" data-tip="2 doses (first dose must be given on or after 1st birthday, spacing between doses is 12 weeks for children under 13 years, and 4 weeks for those older than 13 years)">Varicella</th>
+        </tr>
+        <tr>
+            <th class="left_border">C</th>
+            <th>ME</th>
+            <th>RE</th>
+            <th>CA</th>
+            <th>NC</th>
+            <th class="left_border">C</th>
+            <th>ME</th>
+            <th>RE</th>
+            <th>CA</th>
+            <th>NC</th>
+            <th class="left_border">C</th>
+            <th>ME</th>
+            <th>RE</th>
+            <th>CA</th>
+            <th>NC</th>
+            <th class="left_border">C</th>
+            <th>ME</th>
+            <th>RE</th>
+            <th>CA</th>
+            <th>PoD</th>
+            <th>NC</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr ng-repeat="grade in summary | gradeSort | orderBy:'grade'">
+            <td>{{grade.grade}}</td>
+
+            <td><a ng-click="setStudents(grade.all)">{{grade.all.length}}</a></td>
+
+            <td class="left_border"><a ng-click="setStudents(grade['MMR'].compliant)">{{grade['MMR'].compliant.length}}</a></td>
+            <td><a ng-click="setStudents(grade['MMR'].medical)">{{grade['MMR'].medical.length}}</a></td>
+            <td><a ng-click="setStudents(grade['MMR'].religious)">{{grade['MMR'].religious.length}}</a></td>
+            <td><a ng-click="setStudents(grade['MMR'].conditional)">{{grade['MMR'].conditional.length}}</a></td>
+            <td><a ng-click="setStudents(grade['MMR'].not_compliant)">{{grade['MMR'].not_compliant.length}}</a></td>
+
+            <td class="left_border"><a ng-click="setStudents(grade['IPV'].compliant)">{{grade['IPV'].compliant.length}}</a></td>
+            <td><a ng-click="setStudents(grade['IPV'].medical)">{{grade['IPV'].medical.length}}</a></td>
+            <td><a ng-click="setStudents(grade['IPV'].religious)">{{grade['IPV'].religious.length}}</a></td>
+            <td><a ng-click="setStudents(grade['IPV'].conditional)">{{grade['IPV'].conditional.length}}</a></td>
+            <td><a ng-click="setStudents(grade['IPV'].not_compliant)">{{grade['IPV'].not_compliant.length}}</a></td>
+
+            <td class="left_border"><a ng-click="setStudents(grade['DTP'].compliant)">{{grade['DTP'].compliant.length}}</a></td>
+            <td><a ng-click="setStudents(grade['DTP'].medical)">{{grade['DTP'].medical.length}}</a></td>
+            <td><a ng-click="setStudents(grade['DTP'].religious)">{{grade['DTP'].religious.length}}</a></td>
+            <td><a ng-click="setStudents(grade['DTP'].conditional)">{{grade['DTP'].conditional.length}}</a></td>
+            <td><a ng-click="setStudents(grade['DTP'].not_compliant)">{{grade['DTP'].not_compliant.length}}</a></td>
+
+            <td class="left_border"><a ng-click="setStudents(grade['VAR'].compliant)">{{grade['VAR'].compliant.length}}</a></td>
+            <td><a ng-click="setStudents(grade['VAR'].medical)">{{grade['VAR'].medical.length}}</a></td>
+            <td><a ng-click="setStudents(grade['VAR'].religious)">{{grade['VAR'].religious.length}}</a></td>
+            <td><a ng-click="setStudents(grade['VAR'].conditional)">{{grade['VAR'].conditional.length}}</a></td>
+            <td><a ng-click="setStudents(grade['VAR'].pod)">{{grade['VAR'].pod.length}}</a></td>
+            <td><a ng-click="setStudents(grade['VAR'].not_compliant)">{{grade['VAR'].not_compliant.length}}</a></td>
+        </tr>
+    </tbody>
+    <tfoot>
+        <tr id="totals">
+            <td>Total</td>
+
+            <td><a ng-click="setStudents(totals.all)">{{totals.all.length}}</a></td>
+
+            <td class="left_border"><a ng-click="setStudents(totals.MMR.compliant)">{{totals.MMR.compliant.length}}</a></td>
+            <td><a ng-click="setStudents(totals.MMR.medical)">{{totals.MMR.medical.length}}</a></td>
+            <td><a ng-click="setStudents(totals.MMR.religious)">{{totals.MMR.religious.length}}</a></td>
+            <td><a ng-click="setStudents(totals.MMR.conditional)">{{totals.MMR.conditional.length}}</a></td>
+            <td><a ng-click="setStudents(totals.MMR.not_compliant)">{{totals.MMR.not_compliant.length}}</a></td>
+
+            <td class="left_border"><a ng-click="setStudents(totals.IPV.compliant)">{{totals.IPV.compliant.length}}</a></td>
+            <td><a ng-click="setStudents(totals.IPV.medical)">{{totals.IPV.medical.length}}</a></td>
+            <td><a ng-click="setStudents(totals.IPV.religious)">{{totals.IPV.religious.length}}</a></td>
+            <td><a ng-click="setStudents(totals.IPV.conditional)">{{totals.IPV.conditional.length}}</a></td>
+            <td><a ng-click="setStudents(totals.IPV.not_compliant)">{{totals.IPV.not_compliant.length}}</a></td>
+
+            <td class="left_border"><a ng-click="setStudents(totals.DTP.compliant)">{{totals.DTP.compliant.length}}</a></td>
+            <td><a ng-click="setStudents(totals.DTP.medical)">{{totals.DTP.medical.length}}</a></td>
+            <td><a ng-click="setStudents(totals.DTP.religious)">{{totals.DTP.religious.length}}</a></td>
+            <td><a ng-click="setStudents(totals.DTP.conditional)">{{totals.DTP.conditional.length}}</a></td>
+            <td><a ng-click="setStudents(totals.DTP.not_compliant)">{{totals.DTP.not_compliant.length}}</a></td>
+
+            <td class="left_border"><a ng-click="setStudents(totals.VAR.compliant)">{{totals.VAR.compliant.length}}</a></td>
+            <td><a ng-click="setStudents(totals.VAR.medical)">{{totals.VAR.medical.length}}</a></td>
+            <td><a ng-click="setStudents(totals.VAR.religious)">{{totals.VAR.religious.length}}</a></td>
+            <td><a ng-click="setStudents(totals.VAR.conditional)">{{totals.VAR.conditional.length}}</a></td>
+            <td><a ng-click="setStudents(totals.VAR.pod)">{{totals.VAR.pod.length}}</a></td>
+            <td><a ng-click="setStudents(totals.VAR.not_compliant)">{{totals.VAR.not_compliant.length}}</a></td>
+
+        </tr>
+        <tr>
+            <td colspan="100%"><strong>C</strong>: compliant, <strong>ME</strong>: medical exemptions, <strong>RE</strong>: religious exemptions, <strong>CA</strong>: conditional attendance, <strong>NC</strong>: not compliant, <strong>PoD</strong>: proof of disease</td>
+        </tr>
+    </tfoot>
+</table>
+</fieldset>
+
+
+<fieldset>
+<legend>State Report</legend>
+
+<table id="state" class="grid ng-cloak">
+    <thead>
+        <tr>
+            <th>Grade</th>
+            <th>Number of Pupils Enrolled</th>
+            <th>Number of Pupils with NO Immunization Record</th>
+            <th>Number of Pupils with Conditional Attendance</th>
+            <th>Number of Pupils with Medical Exemption</th>
+            <th>Number of Pupils with Religious Exemption</th>
+            <th>Number of Pre-K pupils with 1 dose of Hib</th>
+            <th>Number of Pupils with 2 doses Varicella / 1 dose for Pre-K / or history of varicella disease</th>
+            <th>Number of Pupils with 2 doses MMR / 1 doese for Pre-K</th>
+            <th>Number of pupils with &ge; 3 doese IPV/OPV</th>
+            <th>Number of pupils with &ge; 4 doses of DTP/DTaP</th>
+            <th>Number of pupils with Tdap</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr ng-repeat="grade in summary | gradeSort | orderBy:'grade'">
+            <td style="font-weight: bold">{{grade.grade}}</td>
+            <td><a ng-click="setStudents(grade.all)">{{grade.all.length}}</a></td>
+            <td><a ng-click="setStudents(grade.state.no_records)">{{grade.state.no_records.length}}</a></td>
+            <td><a ng-click="setStudents(grade.state.conditional_attendance)">{{grade.state.conditional_attendance.length}}</a></td>
+            <td><a ng-click="setStudents(grade.state.medical)">{{grade.state.medical.length}}</a></td>
+            <td><a ng-click="setStudents(grade.state.religious)">{{grade.state.religious.length}}</a></td>
+            <td ng-class="{td_disabled: grade.grade >= 0}"><a ng-click="setStudents(grade.state.hib)">{{grade.grade < 0 ? grade.state.hib.length : ''}}</a></td>
+            <td><a ng-click="setStudents(grade.state.var)">{{grade.state.var.length}}</a></td>
+            <td><a ng-click="setStudents(grade.state.mmr)">{{grade.state.mmr.length}}</a></td>
+            <td><a ng-click="setStudents(grade.state.ipv)">{{grade.state.ipv.length}}</a></td>
+            <td><a ng-click="setStudents(grade.state.dtp)">{{grade.state.dtp.length}}</a></td>
+            <td ng-class="{td_disabled: grade.grade < 7}"><a ng-click="setStudents(grade.state.tdap)">{{grade.grade >= 7 ? grade.state.tdap.length: ''}}</a></td>
+        </tr>
+    </tbody>
+    <tfoot>
+    <tr id="totals">
+        <td>Total</td>
+        <td><a ng-click="setStudents(totals.all)">{{totals.all.length}}</a></td>
+        <td><a ng-click="setStudents(totals.state.no_records)">{{totals.state.no_records.length}}</a></td>
+        <td><a ng-click="setStudents(totals.state.conditional_attendance)">{{totals.state.conditional_attendance.length}}</a></td>
+        <td><a ng-click="setStudents(totals.state.medical)">{{totals.state.medical.length}}</a></td>
+        <td><a ng-click="setStudents(totals.state.religious)">{{totals.state.religious.length}}</a></td>
+        <td><a ng-click="setStudents(totals.state.hib)">{{totals.state.hib.length}}</a></td>
+        <td><a ng-click="setStudents(totals.state.var)">{{totals.state.var.length}}</a></td>
+        <td><a ng-click="setStudents(totals.state.mmr)">{{totals.state.mmr.length}}</a></td>
+        <td><a ng-click="setStudents(totals.state.ipv)">{{totals.state.ipv.length}}</a></td>
+        <td><a ng-click="setStudents(totals.state.dtp)">{{totals.state.dtp.length}}</a></td>
+        <td><a ng-click="setStudents(totals.state.tdap)">{{totals.state.tdap.length}}</a></td>
+    </tfoot>
+</table>
+</fieldset>
+</div>
+<br>
+<!-- end of content of bounding box -->
+
+<script>
+
+require(['jquery', 'angular', 'underscore', 'moment.min'], function($, angular, _, moment) {
+
+    var immApp = angular.module('immunizationApp',[]);
+    var moment = require('moment.min');
+
+    function onlyUnique(value, index, self) {
+        return self.indexOf(value) === index;
+    }
+
+    immApp.filter('gradeSort', function() { return function(obj) {
+        if (!(obj instanceof Object)) return obj;
+        return _.map(obj, function(val, key) {return val});
+    }});
+
+    immApp.controller('ReportController', ['$scope', '$http', function($scope, $http) {
+        $scope.includeprereg = false;
+        $scope.grades = [];
+        $scope.students = {};
+        $scope.school = {};
+
+        $scope.gradeSort = function(grade) {
+            console.log(grade);
+            return parseInt(grade.grade);
+        };
+
+        function Student(stu) {
+            this.dcid = stu.dcid;
+            this.preregistered = stu.preg;
+            this.dob = moment([stu.dob[0], stu.dob[1]-1, stu.dob[2]]);
+            this.first_birthday_grace = moment(this.dob).add(1, 'year').subtract(4, 'days');
+            this.grade = stu.grade;
+            this.doses = new Object;
+            this.doses.DTP = typeof(stu.doses.DTP) !== 'undefined' ? stu.doses.DTP.map(function(d) { return moment([d[0], d[1]-1, d[2]]) }) : []
+            this.doses.HIB = typeof(stu.doses.HIB) !== 'undefined' ? stu.doses.HIB.map(function(d) { return moment([d[0], d[1]-1, d[2]]) }) : []
+            this.doses.IPV = typeof(stu.doses.IPV) !== 'undefined' ? stu.doses.IPV.map(function(d) { return moment([d[0], d[1]-1, d[2]]) }) : []
+            this.doses.MMR = typeof(stu.doses.MMR) !== 'undefined' ? stu.doses.MMR
+                                                                                .map(function(d) {
+                                                                                    return moment([d[0], d[1]-1, d[2]]);
+                                                                                })
+                                                                                .filter(function (date) {
+                                                                                    return this.first_birthday_grace <= date;
+                                                                                }, this) : []
+            this.doses.VAR = typeof(stu.doses.VAR) !== 'undefined' ? stu.doses.VAR
+                                                                                .map(function(d) {
+                                                                                    return moment([d[0], d[1]-1, d[2]]);
+                                                                                })
+                                                                                .filter(function (date) {
+                                                                                    return this.first_birthday_grace <= date;
+                                                                                }, this) : []
+            this.exemptions = stu.exempt;
+            this.compliant = [];
+            this.compliant['DTP'] = this.compliant_check('DTP');
+            this.compliant['HIB'] = this.compliant_check('HIB');
+            this.compliant['IPV'] = this.compliant_check('IPV');
+            this.compliant['MMR'] = this.compliant_check('MMR');
+            this.compliant['VAR'] = this.compliant_check('VAR');
+        };
+
+        Student.prototype.exempt = function(vacc) {
+            return this.exemptions[vacc];
+        };
+
+        Student.prototype.exempt_check = function(vacc, type) {
+            if (typeof(this.exempt(vacc)) === 'undefined') {
+                return false;
+            }
+            return this.exempt(vacc) === type;
+        };
+
+        Student.prototype.compliant_check = function(vacc) {
+            var compliant = false;
+
+            if (typeof this.exempt(vacc) !== 'undefined') {
+                if (this.exempt(vacc) === 'Alt') {
+                    return true;
+                }
+                if (this.exempt(vacc)) {
+                    return false;
+                }
+            }
+
+            switch(vacc) {
+                case 'HIB':
+
+                    // Only for pre-school
+                    if (this.grade >= 0) {
+                        compliant = true;
+                    }
+
+                    // if older than 59 months, not needed
+                    if (moment().diff(this.dob, 'months') > 59) {
+                        compliant = true;
+                    }
+
+                    // 1 dose after first birthday
+                    if (this.doses.HIB.length >= 1) {
+                        compliant = true;
+                    }
+
+                    break;
+
+                case 'MMR':
+                    if (this.doses.MMR.length === 0) {
+                        return false;
+                    }
+
+                    if (this.grade < 0) {
+                        if(moment.max(this.doses.MMR) >= this.first_birthday_grace) {
+                            compliant = true;
+                        }
+                    }
+
+                    if(moment.min(this.doses.MMR) >= this.first_birthday_grace
+                        && moment.max(this.doses.MMR).diff(moment(moment.min(this.doses.MMR)).subtract(4, 'days'), 'weeks') >= 4) {
+                        compliant = true;
+                    }
+
+                    break;
+
+                case 'IPV':
+                    if (this.grade < 0) {
+                        if (this.doses.IPV.length >= 3) {
+                            compliant = true;
+                        }
+                    }
+
+                    if (this.doses.IPV.length >= 4) {
+                        compliant = true;
+                    }
+
+                    if (this.doses.IPV.length === 3) {
+                        if(moment.max(this.doses.IPV).diff(moment(this.dob).subtract(4, 'days'), 'years') >= 4) {
+                            compliant = true;
+                        }
+                    }
+
+                    break;
+
+                case 'DTP':
+                    // Pre-K = 4 doses
+                    if (this.grade < 0 && this.doses.DTP.length >= 4) {
+                        compliant = true;
+                    }
+
+                    // 0-7 years old = 4 doses, 1 after 4th birthday (4 day grace)
+                    if (moment().diff(moment(this.dob), 'years') < 7
+                        && this.doses.DTP.length >= 4
+                        && moment.max(this.doses.DTP).diff(moment(this.dob).subtract(4, 'days'), 'years') >= 4) {
+                            compliant = true;
+                    }
+
+                    // 7 years old or older, 3 doses, 1 after 4th birthday (4 day grace)
+                    if (moment().diff(moment(this.dob), 'years') >= 7
+                        && this.doses.DTP.length >= 3
+                        && moment.max(this.doses.DTP).diff(moment(this.dob).subtract(4, 'days'), 'years') >= 4) {
+                            compliant = true;
+                    }
+
+                    // 7th grader, one dose after 7 years old
+                    if (this.grade >= 7 && moment.max(this.doses.DTP).diff(moment(this.dob).subtract(4, 'days'), 'years') < 7) {
+                        compliant = false;
+                    }
+
+                    break;
+                case 'VAR':
+                    if (this.doses.VAR.length === 0) {
+                        return false;
+                    }
+
+                    if (this.grade < 0) {
+                        if (moment.max(this.doses.VAR) >= this.first_birthday_grace) {
+                            compliant = true;
+                        }
+                    }
+
+                    if (moment.min(this.doses.VAR) >= this.first_birthday_grace) {
+                        if (moment().diff(this.dob, 'years') < 13) {
+                            if (moment.max(this.doses.VAR).diff(moment(moment.min(this.doses.VAR)).subtract(4, 'days'), 'weeks') >= 4) {
+                                compliant = true;
+                            }
+                        } else if (moment().diff(this.dob, 'years') >= 13) {
+                            if (moment.max(this.doses.VAR).diff(moment(moment.min(this.doses.VAR)).subtract(4, 'days'), 'weeks') >= 4) {
+                                compliant = true;
+                            }
+                        }
+                    }
+
+                    break;
+                default:
+                    console.log('Problem with vacc: ' + vacc);
+            }
+            return compliant;
+        };
+
+        Student.prototype.notCompliant = function(vacc) {
+            return !(this.compliant[vacc] || typeof(this.exempt(vacc)) !== 'undefined')
+        };
+
+        School = function(students) {
+            grades = new Object;
+            all = new Grade('Total');
+            students.forEach(function(stu) {
+                if (!grades.hasOwnProperty(stu.grade)) {
+                    grades[stu.grade] = new Grade(stu.grade);
+                }
+                grades[stu.grade].students.push(stu);
+                all.students.push(stu);
+            });
+            this.grades = grades;
+            this.all = all;
+        };
+
+        School.prototype.enrolled = function() {
+            this.students.length();
+        };
+
+        $scope.getData = function() {
+            loadingDialog();
+            loadingDialogInstance.setTitle('Loading Data');
+
+            var url = 'immunizations.json';
+            if ($scope.includeprereg) {
+                url += '?includeprereg=1';
+            }
+
+            $http({method: 'JSON', url: url})
+                .success(function(data, status) {
+                    students = [];
+                    loadingDialogInstance.setTitle('Processing Students');
+                    data.pop();
+                    data.forEach(function(d) {
+                        students.push(new Student(d));
+                    });
+
+                    $scope.students = students;
+
+                    closeLoading();
+                    $scope.calculateData(true);
+                })
+                .error(function(data, status) {
+                    console.log(data || "Request failed");
+                    closeLoading();
+                });
+        };
+
+        Vacc = function() {
+            this.compliant = [];
+            this.medical = [];
+            this.religious = [];
+            this.conditional = [];
+            this.not_compliant = [];
+        };
+
+        Grade = function(grade) {
+            this.grade = grade;
+            this.all = [];
+            this.HIB = new Vacc;
+            this.MMR = new Vacc;
+            this.IPV = new Vacc;
+            this.DTP = new Vacc;
+            this.VAR = new Vacc;
+            this.VAR.pod = [];
+            this.state = {
+                no_records: [],
+                conditional_attendance: [],
+                medical: [],
+                religious: [],
+                hib: [],
+                var: [],
+                mmr: [],
+                ipv: [],
+                dtp: [],
+                tdap: []
+            }
+        };
+
+        $scope.calculateData = function(loading) {
+            loadingDialog();
+            loadingDialogInstance.setTitle('Applying Rules');
+            $scope.summary = {};
+            $scope.totals = new Grade('all');
+            $scope.students.forEach(function(student) {
+                if (!student.prereg || $scope.includeprereg) {
+                    if (!$scope.summary.hasOwnProperty(parseInt(student.grade))) {
+                        $scope.summary[parseInt(student.grade)] = new Grade(parseInt(student.grade));
+                    }
+                    Object.keys($scope.summary[student.grade]).forEach(function(vacc) {
+                        if (vacc === 'all') {
+                            $scope.summary[student.grade].all.push(student.dcid);
+                            $scope.totals.all.push(student.dcid);
+                        } else if (_.contains(['HIB','MMR','IPV','DTP','VAR'], vacc)) {
+                            if (student.compliant_check(vacc)) {
+                                $scope.summary[student.grade][vacc].compliant.push(student.dcid);
+                                $scope.totals[vacc].compliant.push(student.dcid);
+                            } else if (student.exempt_check(vacc, 'Medical')) {
+                                $scope.summary[student.grade][vacc].medical.push(student.dcid);
+                                $scope.totals[vacc].medical.push(student.dcid);
+                            } else if (student.exempt_check(vacc, 'Religious')) {
+                                $scope.summary[student.grade][vacc].religious.push(student.dcid);
+                                $scope.totals[vacc].religious.push(student.dcid);
+                            } else if (student.exempt_check(vacc, 'Conditional')) {
+                                $scope.summary[student.grade][vacc].conditional.push(student.dcid);
+                                $scope.totals[vacc].conditional.push(student.dcid);
+                            } else if (student.exempt_check(vacc, 'PoD')) {
+                                $scope.summary[student.grade][vacc].pod.push(student.dcid);
+                                $scope.totals[vacc].pod.push(student.dcid);
+                            } else {
+                                $scope.summary[student.grade][vacc].not_compliant.push(student.dcid);
+                                $scope.totals[vacc].not_compliant.push(student.dcid);
+                            }
+                        }
+                    }, student);
+
+                    // State table stuff
+                    if (
+                        student.doses.DTP.length === 0 &&
+                        student.doses.HIB.length === 0 &&
+                        student.doses.IPV.length === 0 &&
+                        student.doses.MMR.length === 0 &&
+                        student.doses.VAR.length === 0 &&
+                        Object.keys(student.exemptions).length === 0
+                    ) {
+                        $scope.summary[student.grade].state.no_records.push(student.dcid);
+                        $scope.totals.state.no_records.push(student.dcid);
+                    }
+
+                    // Conditional Attendance
+                    var exempt = false;
+                    _.each(Object.keys(student.exemptions), function(vacc) {
+                        if (student.exempt_check(vacc, 'Conditional')) {
+                            exempt = true;
+                        }
+                    })
+                    if (exempt) {
+                        $scope.summary[student.grade].state.conditional_attendance.push(student.dcid);
+                        $scope.totals.state.conditional_attendance.push(student.dcid);
+                    }
+
+                    // Medical Exemption
+                    exempt = false;
+                    _.each(Object.keys(student.exemptions), function(vacc) {
+                        if (student.exempt_check(vacc, 'Medical')) {
+                            exempt = true;
+                        }
+                    })
+                    if (exempt) {
+                        $scope.summary[student.grade].state.medical.push(student.dcid);
+                        $scope.totals.state.medical.push(student.dcid);
+                    }
+
+                    // Religious Exemption
+                    exempt = false;
+                    _.each(Object.keys(student.exemptions), function(vacc) {
+                        if (student.exempt_check(vacc, 'Religious')) {
+                            exempt = true;
+                        }
+                    })
+                    if (exempt) {
+                        $scope.summary[student.grade].state.religious.push(student.dcid);
+                        $scope.totals.state.religious.push(student.dcid);
+                    }
+
+                    // Hib
+                    if (student.grade < 0) {
+                        if (student.doses.HIB.length >= 1) {
+                            $scope.summary[student.grade].state.hib.push(student.dcid);
+                            $scope.totals.state.hib.push(student.dcid);
+                        }
+                    }
+
+                    // VAR
+                    if (
+                        (student.grade < 0 && student.doses.VAR.length >= 1) ||
+                        (student.grade >= 0 && student.doses.VAR.length >= 2) ||
+                        (student.exempt_check('VAR', 'PoD'))
+                    ) {
+                        $scope.summary[student.grade].state.var.push(student.dcid);
+                        $scope.totals.state.var.push(student.dcid);
+                    }
+
+                    // MMR
+                    if (
+                        (student.grade < 0 && student.doses.MMR.length >= 1) ||
+                        (student.grade >= 0 && student.doses.MMR.length >= 2)
+                    ) {
+                        $scope.summary[student.grade].state.mmr.push(student.dcid);
+                        $scope.totals.state.mmr.push(student.dcid);
+                    }
+
+                    // IPV
+                    if (student.doses.IPV.length >= 3) {
+                        $scope.summary[student.grade].state.ipv.push(student.dcid);
+                        $scope.totals.state.ipv.push(student.dcid);
+                    }
+
+                    // DTP
+                    if (student.doses.DTP.length >= 4) {
+                        $scope.summary[student.grade].state.dtp.push(student.dcid);
+                        $scope.totals.state.dtp.push(student.dcid);
+                        if (student.grade >= 7) {
+                            $scope.summary[student.grade].state.tdap.push(student.dcid);
+                            $scope.totals.state.tdap.push(student.dcid);
+                        }
+                    }
+                }
+            });
+            closeLoading();
+        };
+
+        $scope.getData();
+
+        $scope.setStudents = function(dcids) {
+            loadingDialog();
+            $http({
+                    method: 'POST',
+                    url: '/admin/studentlist/functions.html',
+                    data: $.param({ac: 'buildsel;table=students;list=' + dcids}),
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'}
+                }).
+                success(function(data, status, headers, config) {
+                    window.location.href = "/admin/home.html";
+                }).
+                error(function(data, status, headers, config) {
+                    console.log(data || "Request failed");
+                    alert("There was an issue setting your current selection");
+                    closeLoading();
+                });
+        };
+
+    }]);
+
+    angular.bootstrap(document, ['immunizationApp']);
+});
+</script>
+
+~[wc:admin_footer_css]
+
+</body>
+</html><!-- non framed -->

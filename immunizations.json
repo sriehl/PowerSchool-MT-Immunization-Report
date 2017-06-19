@@ -1,0 +1,128 @@
+[~[tlist_sql;
+
+with stus as (
+  select
+    id studentid
+  from
+    students s
+  where
+    (s.enroll_status = 0
+      ~[if.~[gpv:includeprereg]=1]or s.enroll_status = -1[/if]
+    )
+    and (
+      0 = ~(curschoolid)
+      or s.enrollment_schoolid = ~(curschoolid)
+    )
+),
+
+vaccine_map as (
+  select
+    healthvaccineid,
+    vaccinecode,
+    case vaccinecode
+      when 'DTX' then 'DTP'
+      when 'TDA' then 'DTP'
+      when 'DTA' then 'DTP'
+      when 'TND' then 'DTP'
+      when 'DNT' then 'DTP'
+      when 'MMX' then 'MMR'
+      when 'IPX' then 'IPV'
+      else vaccinecode
+    end vaccine
+  from
+    healthvaccine
+  where
+    vaccinecode in ('HIB', 'DTP', 'DTX', 'TDA', 'TND', 'DNT', 'DTA', 'TND', 'MMR', 'MMX', 'IPV', 'IPX', 'VAR')
+
+),
+
+vacc_doses as (
+  select
+    doses.studentid,
+    chr(34) || vaccine.vaccine || chr(34) || chr(58) ||
+    chr(91) || listagg(chr(91) || to_char(doses.dateadministered, 'YYYY,fmMM,DD') || chr(93), ',') within group (order by doses.dateadministered) || chr(93) doses
+  from
+    healthstuddoserec doses
+    left join vaccine_map vaccine
+      on vaccine.healthvaccineid = doses.healthvaccineid
+  where
+    vaccine.vaccine is not null
+    and doses.dateadministered is not null
+    and doses.studentid in (select studentid from stus)
+  group by
+    doses.studentid,
+    vaccine.vaccine
+),
+
+doses as (
+  select
+    studentid,
+    listagg(doses, ',') within group (order by doses) doses
+  from
+    vacc_doses
+  where
+    studentid in (select studentid from stus)
+  group by
+    studentid
+),
+
+exemptions as (
+  select distinct
+    immrec.studentid,
+    vaccine.vaccine,
+    case immexempt.immunizationexemptionname
+      when 'MD proof of Chicken Pox' then 'PoD'
+      when 'Completed using alternate shot/series' then 'Alt'
+      when 'Conditional Attendance' then 'Conditional'
+      else immexempt.immunizationexemptionname
+    end type
+  from
+    healthstudimmrec immrec
+    left join healthimmexempt immexempt
+      on immexempt.healthimmexemptid = immrec.healthimmexemptid
+    left join vaccine_map vaccine
+      on vaccine.healthvaccineid = immrec.healthvaccineid
+  where
+    immexempt.healthimmexemptid is not null
+    and vaccine.vaccine is not null
+    and immrec.studentid in (select studentid from stus)
+),
+
+exemptions_json as (
+  select
+    studentid,
+    listagg(chr(34) || vaccine || chr(34) || chr(58) || chr(34) || '' || type || chr(34), ',') within group (order by vaccine) exemptions
+  from
+    exemptions
+  group by
+    studentid
+)
+
+select
+  '{' ||
+  chr(34) || 'dcid' || chr(34) || chr(58) || s.dcid || ',' ||
+   chr(34) || 'preg' || chr(34) || chr(58) || case s.enroll_status when -1 then 'true' when 0 then 'false' end || ',' ||
+   chr(34) || 'dob' || chr(34) || chr(58) || chr(91) || to_char(s.dob, 'YYYY,fmMM,DD') || chr(93) || ',' ||
+   chr(34) || 'grade' || chr(34) || chr(58) || s.grade_level || ',' ||
+   chr(34) || 'doses' || chr(34) || chr(58) || '{' || doses.doses || '},' ||
+   chr(34) || 'exempt' || chr(34) || chr(58) || '{' || exemptions_json.exemptions || '}' ||
+  '}'
+from
+  students s
+  left join doses
+    on doses.studentid = s.id
+  left join exemptions_json
+    on exemptions_json.studentid = s.id
+where
+  s.enroll_status in (-1, 0)
+  and s.id in (select studentid from stus)
+
+order by
+  s.grade_level
+
+
+
+
+-- remove superflous whitespace to save on data/bandwidth
+]~(data),
+[/tlist_sql]{}]
